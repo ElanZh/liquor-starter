@@ -23,14 +23,17 @@
         http:
           enabled: true
     ```
-    同时将 ```elan.liquor.starter.HttpTraceLog```的日志级别设置为 ```debug```
+    同时将 ```elan.liquor.starter.SimpleTrace```的日志级别设置为 ```debug```
     
     这样项目日志中就会增加请求记录：
     ```java
-    2019-12-29 20:58:34.056 DEBUG 6148 --- [nio-8080-exec-2] elan.liquor.starter.HttpTraceLog         : http-trace-log| method: GET, path: /hello/elan, query: name=elan, rawQuery: name=elan, timeTaken: 2ms, time: 2019-12-29 20:58:34.053691000 .
+    2019-12-29 20:58:34.056 DEBUG 6148 --- [nio-8080-exec-2] elan.liquor.starter.SimpleTrace         : http-trace-log| method: GET, path: /hello/elan, query: name=elan, rawQuery: name=elan, timeTaken: 2ms, time: 2019-12-29 20:58:34.053691000 .
     ```
    
 * 如果要将日志输出到其他，比如redis，mongo则需要自己继承 ```HttpTraceRepository``` 并实现其 ```add```方法，但是该方法无法获取请求体中的参数，是因为要兼顾springMVC和react
+
+使用另外一种配置可以收集http所有信息，但是只限于springMVC，react/webflux则失效。
+
 
 
 

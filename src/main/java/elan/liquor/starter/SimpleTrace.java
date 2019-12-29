@@ -1,5 +1,6 @@
 package elan.liquor.starter;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.actuate.trace.http.HttpTrace;
 import org.springframework.boot.actuate.trace.http.HttpTraceRepository;
@@ -9,8 +10,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class HttpTraceLog implements HttpTraceRepository {
-    private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(HttpTraceLog.class);
+@Slf4j
+public class SimpleTrace implements HttpTraceRepository {
 
     @Override
     public List<HttpTrace> findAll() {
