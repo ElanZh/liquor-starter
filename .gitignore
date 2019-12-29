@@ -1,0 +1,40 @@
+*.class
+.DS_Store
+application.pid
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.ear
+!.mvn/wrapper/maven-wrapper.jar
+
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+
+# Eclipse
+.classpath
+.project
+target
+.settings
+
+# Idea
+.idea
+*.iml
+
+# git
+*.orig
+
+# Apollo配置中心缓存
+apollo-cache
+
+# sonar扫描存储
+**/.scannerwork
+
+# H2本地库文件
+testDB**
+
+logs/
+*.log
