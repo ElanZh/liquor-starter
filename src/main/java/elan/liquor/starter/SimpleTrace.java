@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.actuate.trace.http.HttpTrace;
 import org.springframework.boot.actuate.trace.http.HttpTraceRepository;
+import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -39,6 +40,9 @@ public class SimpleTrace implements HttpTraceRepository {
     }
 
     private String mapToString(Map<String, List<String>> headers) {
+        if (CollectionUtils.isEmpty(headers)) {
+            return "";
+        }
         StringBuilder result = new StringBuilder("");
         headers.forEach((k, v) -> result.append("|").append(k).append("=").append(StringUtils.join(v, ",")));
         result.deleteCharAt(0);
