@@ -31,7 +31,7 @@ public class HttpTraceConfig {
     @Bean
     @ConditionalOnMissingBean(LogCollector.class)
     public LogCollector logCollector() {
-        return fullLog ->
+        return (fullLog, request, response) ->
         {
             try {
                 log.debug("http-full-trace | " + new ObjectMapper().writeValueAsString(fullLog));

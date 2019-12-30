@@ -1,6 +1,7 @@
 package elan.liquor.starter;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpStatus;
@@ -23,14 +24,18 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 
+import static elan.liquor.starter.DateUtil.DTF;
+
 /**
  * 完整的http信息采集
  */
+@Slf4j
 public class HttpFullTrace extends OncePerRequestFilter implements Ordered {
     // 上传文件不采集
     private static final String IGNORE_CONTENT_TYPE = "multipart/form-data";
     private final LogCollector logCollector;
     private final MeterRegistry registry;
+
     public HttpFullTrace(LogCollector logCollector, MeterRegistry registry) {
         this.logCollector = logCollector;
         this.registry = registry;
@@ -65,17 +70,20 @@ public class HttpFullTrace extends OncePerRequestFilter implements Ordered {
                 fullLog.setPath(path);
                 fullLog.setMethod(request.getMethod());
                 fullLog.setTimeTaken(Duration.between(startTime, Instant.now()).toMillis());
-                fullLog.setTime(LocalDateTime.now().toString());
+                fullLog.setTime(LocalDateTime.now().format(DTF));
                 fullLog.setParameterMap(mapToString(request.getParameterMap()));
                 fullLog.setStatus(status);
                 fullLog.setRequestBody(getRequestBody(request));
                 fullLog.setResponseBody(getResponseBody(response));
-                logCollector.collect(fullLog);
+                logCollector.collect(fullLog, request, response);
             }
             updateResponse(response);
         }
     }
 
+    /**
+     * 校验url
+     */
     private boolean isRequestValid(HttpServletRequest request) {
         try {
             new URI(request.getRequestURL().toString());
@@ -92,7 +100,7 @@ public class HttpFullTrace extends OncePerRequestFilter implements Ordered {
             try {
                 requestBody = IOUtils.toString(wrapper.getContentAsByteArray(), wrapper.getCharacterEncoding());
             } catch (IOException e) {
-                // NOOP
+                log.error("请求体输出到日志异常：" + e.getMessage());
             }
         }
         return requestBody;
@@ -105,7 +113,7 @@ public class HttpFullTrace extends OncePerRequestFilter implements Ordered {
             try {
                 responseBody = IOUtils.toString(wrapper.getContentAsByteArray(), wrapper.getCharacterEncoding());
             } catch (IOException e) {
-                // NOOP
+                log.error("响应体输出到日志异常：" + e.getMessage());
             }
         }
         return responseBody;
@@ -116,12 +124,12 @@ public class HttpFullTrace extends OncePerRequestFilter implements Ordered {
         Objects.requireNonNull(responseWrapper).copyBodyToResponse();
     }
 
-    private String mapToString(Map<String, String[]> parameterMap){
-        if (CollectionUtils.isEmpty(parameterMap)){
+    private String mapToString(Map<String, String[]> parameterMap) {
+        if (CollectionUtils.isEmpty(parameterMap)) {
             return "";
         }
         StringBuilder result = new StringBuilder("");
-        parameterMap.forEach((k,v)-> result.append("|").append(k).append("=").append(Arrays.toString(v)));
+        parameterMap.forEach((k, v) -> result.append("|").append(k).append("=").append(Arrays.toString(v)));
         result.deleteCharAt(0);
         return result.toString();
     }
