@@ -12,6 +12,7 @@ public class LogProperties {
 
     /** 服务名称 */
     private static String applicationName;
+    /** 自定义tag */
     private static String customTag;
     /** 不过滤的uri */
     private static List<String> excludeUri;
