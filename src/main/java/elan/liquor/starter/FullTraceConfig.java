@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @ConditionalOnWebApplication
-@ConditionalOnProperty(prefix = LogProperties.ENV_PREFIX, value = "enabled")
+@ConditionalOnProperty(prefix = LogProperties.CONFIG_PREFIX, value = "enabled")
 public class FullTraceConfig {
 
     @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
