@@ -35,9 +35,11 @@ public class HttpFullTrace extends OncePerRequestFilter implements Ordered {
     private static final String IGNORE_CONTENT_TYPE = "multipart/form-data";
     private final LogCollector logCollector;
     private final MeterRegistry registry;
+    private final LogProperties logProperties;
 
-    public HttpFullTrace(LogCollector logCollector, MeterRegistry registry) {
+    public HttpFullTrace(LogCollector logCollector, LogProperties logProperties, MeterRegistry registry) {
         this.logCollector = logCollector;
+        this.logProperties = logProperties;
         this.registry = registry;
     }
 
@@ -67,6 +69,7 @@ public class HttpFullTrace extends OncePerRequestFilter implements Ordered {
             String path = request.getRequestURI();
             if (!Objects.equals(IGNORE_CONTENT_TYPE, request.getContentType())) {
                 FullLog fullLog = new FullLog();
+                fullLog.setCustomTag(logProperties.getCustomTag());
                 fullLog.setPath(path);
                 fullLog.setMethod(request.getMethod());
                 fullLog.setTimeTaken(Duration.between(startTime, Instant.now()).toMillis());
