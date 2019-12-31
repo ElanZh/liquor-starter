@@ -36,7 +36,7 @@ public class HttpFullTrace extends OncePerRequestFilter implements Ordered {
     private final LogCollector logCollector;
     private final MeterRegistry registry;
 
-    public HttpFullTrace(LogCollector logCollector, LogProperties logProperties, MeterRegistry registry) {
+    public HttpFullTrace(LogCollector logCollector, MeterRegistry registry) {
         this.logCollector = logCollector;
         this.registry = registry;
     }
@@ -67,7 +67,7 @@ public class HttpFullTrace extends OncePerRequestFilter implements Ordered {
             String path = request.getRequestURI();
             if (!Objects.equals(IGNORE_CONTENT_TYPE, request.getContentType())) {
                 FullLog fullLog = new FullLog();
-                fullLog.setCustomTag(LogProperties.getCustomTag());
+                fullLog.setCustomTag(HttpTraceConfig.getCustomTag());
                 fullLog.setPath(path);
                 fullLog.setMethod(request.getMethod());
                 fullLog.setTimeTaken(Duration.between(startTime, Instant.now()).toMillis());

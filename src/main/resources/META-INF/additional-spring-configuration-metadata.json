@@ -1,0 +1,31 @@
+{
+  "groups": [
+    {
+      "name": "liquor.http-full-trace",
+      "type": "elan.liquor.starter.HttpTraceConfig",
+      "sourceType": "elan.liquor.starter.HttpTraceConfig"
+    }
+  ],
+  "properties": [
+    {
+      "name": "liquor.http-full-trace.enabled",
+      "type": "java.lang.Boolean",
+      "defaultValue": false,
+      "description": "是否启用完整http追踪"
+    },{
+      "name": "liquor.http-full-trace.customTag",
+      "type": "java.lang.String",
+      "defaultValue": "${spring.application.name}",
+      "description": "自定义tag"
+    },{
+      "name": "liquor.http-full-trace.excludeUri",
+      "type": "java.util.List",
+      "description": "不过滤的uri (未实现)"
+    },{
+      "name": "liquor.http-full-trace.includeUri",
+      "type": "java.util.List",
+      "description": "需要过滤的uri (未实现)"
+    }
+  ],
+  "hints": []
+}
