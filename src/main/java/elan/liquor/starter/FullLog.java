@@ -17,6 +17,10 @@ public class FullLog {
     private String time;
     /** 响应码 */
     private Integer status;
+    /** 请求的IP */
+    private String ip;
+    private String requestHeader;
     private String requestBody;
+    private String responseHeader;
     private String responseBody;
 }

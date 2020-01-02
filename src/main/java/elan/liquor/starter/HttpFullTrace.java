@@ -20,9 +20,7 @@ import java.net.URISyntaxException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static elan.liquor.starter.DateUtil.DTF;
 
@@ -48,10 +46,12 @@ public class HttpFullTrace extends OncePerRequestFilter implements Ordered {
 
     @Override
     protected void doFilterInternal(javax.servlet.http.HttpServletRequest request, javax.servlet.http.HttpServletResponse response, javax.servlet.FilterChain filterChain) throws ServletException, IOException {
-        if (!isRequestValid(request)) {
+        // 校验路径 以及检查是否处理路径 上传文件不处理
+        if ((!isRequestValid(request) && !needCollect(request.getRequestURI())) || IGNORE_CONTENT_TYPE.equals(request.getContentType())) {
             filterChain.doFilter(request, response);
             return;
         }
+        // 此处进行包装，一边接下来inputstream可以多次读取
         if (!(request instanceof ContentCachingRequestWrapper)) {
             request = new ContentCachingRequestWrapper(request);
         }
@@ -64,21 +64,45 @@ public class HttpFullTrace extends OncePerRequestFilter implements Ordered {
             filterChain.doFilter(request, response);
             status = response.getStatus();
         } finally {
-            String path = request.getRequestURI();
-            if (!Objects.equals(IGNORE_CONTENT_TYPE, request.getContentType())) {
-                FullLog fullLog = new FullLog();
-                fullLog.setCustomTag(HttpTraceConfig.getCustomTag());
-                fullLog.setPath(path);
-                fullLog.setMethod(request.getMethod());
-                fullLog.setTimeTaken(Duration.between(startTime, Instant.now()).toMillis());
-                fullLog.setTime(LocalDateTime.now().format(DTF));
-                fullLog.setParameterMap(mapToString(request.getParameterMap()));
-                fullLog.setStatus(status);
-                fullLog.setRequestBody(getRequestBody(request));
-                fullLog.setResponseBody(getResponseBody(response));
-                logCollector.collect(fullLog, request, response);
-            }
+            ContentCachingRequestWrapper wrapperRequest = WebUtils.getNativeRequest(request, ContentCachingRequestWrapper.class);
+            ContentCachingResponseWrapper wrapperResponse = WebUtils.getNativeResponse(response, ContentCachingResponseWrapper.class);
+            FullLog fullLog = new FullLog();
+            fullLog.setCustomTag(FullTraceConfig.getCustomTag());
+            fullLog.setPath(request.getRequestURI());
+            fullLog.setMethod(request.getMethod());
+            fullLog.setTimeTaken(Duration.between(startTime, Instant.now()).toMillis());
+            fullLog.setTime(LocalDateTime.now().format(DTF));
+            fullLog.setParameterMap(mapToString(request.getParameterMap()));
+            fullLog.setStatus(status);
+            fullLog.setIp(logCollector.getIp(wrapperRequest));
+            fullLog.setRequestHeader(getRequestHeader(wrapperRequest));
+            fullLog.setRequestBody(getRequestBody(wrapperRequest));
+            fullLog.setResponseHeader(getResponseHeader(wrapperResponse));
+            fullLog.setResponseBody(getResponseBody(wrapperResponse));
+            logCollector.collect(fullLog, wrapperRequest, wrapperResponse);
             updateResponse(response);
+        }
+    }
+
+    /**
+     * 是否需要追踪这个路径的信息
+     *
+     * @param path 路径
+     * @return true=应该处理这个路径
+     */
+    private boolean needCollect(String path) {
+        boolean emptyExclude = CollectionUtils.isEmpty(FullTraceConfig.getExcludeUri());
+        boolean emptyInclude = CollectionUtils.isEmpty(FullTraceConfig.getIncludeUri());
+        if (emptyExclude && emptyInclude) {
+            // 都为空则都处理
+            return true;
+        }
+        if (emptyExclude) {
+            // exclude为空，则只看include
+            return FullTraceConfig.checkInclude(path);
+        } else {
+            // exclude不为空则只看exclude
+            return !FullTraceConfig.checkExclude(path);
         }
     }
 
@@ -94,28 +118,62 @@ public class HttpFullTrace extends OncePerRequestFilter implements Ordered {
         }
     }
 
-    private String getRequestBody(HttpServletRequest request) {
+    private String getRequestHeader(ContentCachingRequestWrapper request) {
+        if (request == null) {
+            return null;
+        }
+        StringBuilder header = new StringBuilder("");
+        Enumeration<String> headerNames = request.getHeaderNames();
+        while (headerNames.hasMoreElements()) {
+            String headerName = headerNames.nextElement();
+            header.append("|")
+                  .append(headerName)
+                  .append(":")
+                  .append(request.getHeader(headerName));
+        }
+        if (header.length() > 0) {
+            header.deleteCharAt(0);
+        }
+        return header.toString();
+    }
+
+    private String getRequestBody(ContentCachingRequestWrapper request) {
+        if (request == null) {
+            return null;
+        }
         String requestBody = "";
-        ContentCachingRequestWrapper wrapper = WebUtils.getNativeRequest(request, ContentCachingRequestWrapper.class);
-        if (wrapper != null) {
-            try {
-                requestBody = IOUtils.toString(wrapper.getContentAsByteArray(), wrapper.getCharacterEncoding());
-            } catch (IOException e) {
-                log.error("请求体输出到日志异常：" + e.getMessage());
-            }
+        try {
+            requestBody = IOUtils
+                    .toString(request.getContentAsByteArray(), request.getCharacterEncoding())
+                    .replaceAll("\\r\\n|\\r|\\n|\\t", "");
+        } catch (IOException e) {
+            log.error("请求体输出到日志异常：" + e.getMessage());
         }
         return requestBody;
     }
 
-    private String getResponseBody(HttpServletResponse response) {
+    private String getResponseHeader(ContentCachingResponseWrapper response) {
+        if (response == null) {
+            return null;
+        }
+        StringBuilder header = new StringBuilder("");
+        Collection<String> headerNames = response.getHeaderNames();
+        headerNames.forEach(x -> header.append("|").append(x).append(":").append(response.getHeader(x)));
+        if (header.length() > 0) {
+            header.deleteCharAt(0);
+        }
+        return header.toString();
+    }
+
+    private String getResponseBody(ContentCachingResponseWrapper response) {
+        if (response == null) {
+            return null;
+        }
         String responseBody = "";
-        ContentCachingResponseWrapper wrapper = WebUtils.getNativeResponse(response, ContentCachingResponseWrapper.class);
-        if (wrapper != null) {
-            try {
-                responseBody = IOUtils.toString(wrapper.getContentAsByteArray(), wrapper.getCharacterEncoding());
-            } catch (IOException e) {
-                log.error("响应体输出到日志异常：" + e.getMessage());
-            }
+        try {
+            responseBody = IOUtils.toString(response.getContentAsByteArray(), response.getCharacterEncoding());
+        } catch (IOException e) {
+            log.error("响应体输出到日志异常：" + e.getMessage());
         }
         return responseBody;
     }
@@ -127,7 +185,7 @@ public class HttpFullTrace extends OncePerRequestFilter implements Ordered {
 
     private String mapToString(Map<String, String[]> parameterMap) {
         if (CollectionUtils.isEmpty(parameterMap)) {
-            return "";
+            return null;
         }
         StringBuilder result = new StringBuilder("");
         parameterMap.forEach((k, v) -> result.append("|").append(k).append("=").append(Arrays.toString(v)));
