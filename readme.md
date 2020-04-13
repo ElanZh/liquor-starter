@@ -118,4 +118,8 @@
     
     * exclude和include都没有配 则所有路径都将采集
 
+---
+## 2.x Featrue
+
+* 增加requestId的MDC，log配置中增加 ```%X{requestId}``` 即可为每次请求增加一个ID，便于追踪业务
 

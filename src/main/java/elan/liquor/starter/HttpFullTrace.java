@@ -3,6 +3,7 @@ package elan.liquor.starter;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.slf4j.MDC;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.CollectionUtils;
@@ -29,6 +30,7 @@ import static elan.liquor.starter.DateUtil.DTF;
  */
 @Slf4j
 public class HttpFullTrace extends OncePerRequestFilter implements Ordered {
+    public static final String REQUEST_ID = "requestId";
     // 上传文件不采集
     private static final String IGNORE_CONTENT_TYPE = "multipart/form-data";
     private final LogCollector logCollector;
@@ -60,14 +62,19 @@ public class HttpFullTrace extends OncePerRequestFilter implements Ordered {
         }
         int status = HttpStatus.INTERNAL_SERVER_ERROR.value();
         Instant startTime = Instant.now();
+        String requestId = UUID.randomUUID().toString();
         try {
+            MDC.put(REQUEST_ID, requestId);
             filterChain.doFilter(request, response);
             status = response.getStatus();
         } finally {
             ContentCachingRequestWrapper wrapperRequest = WebUtils.getNativeRequest(request, ContentCachingRequestWrapper.class);
             ContentCachingResponseWrapper wrapperResponse = WebUtils.getNativeResponse(response, ContentCachingResponseWrapper.class);
+            // J2EE使用线程池处理请求，此处应清除MDC
+            MDC.clear();
             FullLog fullLog = new FullLog();
             fullLog.setCustomTag(FullTraceConfig.getCustomTag());
+            fullLog.setRequestId(requestId);
             fullLog.setPath(request.getRequestURI());
             fullLog.setMethod(request.getMethod());
             fullLog.setTimeTaken(Duration.between(startTime, Instant.now()).toMillis());

@@ -39,6 +39,7 @@ public class FullTraceConfig {
                 log.debug("default http-full-trace implement: " +
                         "\n************************" +
                         "\ncustomTag=" + fullLog.getCustomTag() +
+                        "\nrequestId=" + fullLog.getRequestId() +
                         "\npath=" + fullLog.getPath() +
                         "\nparameterMap=" + fullLog.getParameterMap() +
                         "\nmethod=" + fullLog.getMethod() +

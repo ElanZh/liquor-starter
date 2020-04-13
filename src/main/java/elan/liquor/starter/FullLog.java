@@ -7,6 +7,8 @@ package elan.liquor.starter;
 public class FullLog {
     /** 自定义tag */
     private String customTag;
+    /** requestUUID */
+    private String requestId;
     /** 请求路径 */
     private String path;
     private String parameterMap;
