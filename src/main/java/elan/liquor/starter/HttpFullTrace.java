@@ -48,8 +48,10 @@ public class HttpFullTrace extends OncePerRequestFilter implements Ordered {
 
     @Override
     protected void doFilterInternal(javax.servlet.http.HttpServletRequest request, javax.servlet.http.HttpServletResponse response, javax.servlet.FilterChain filterChain) throws ServletException, IOException {
-        // 校验路径 以及检查是否处理路径 上传文件不处理
-        if ((!isRequestValid(request) && !needCollect(request.getRequestURI())) || IGNORE_CONTENT_TYPE.equals(request.getContentType())) {
+        // 校验路径 上传文件不处理 以及检查是否处理路径
+        if (!isRequestValid(request)
+                || IGNORE_CONTENT_TYPE.equals(request.getContentType())
+                || !needCollect(request.getRequestURI())) {
             filterChain.doFilter(request, response);
             return;
         }
